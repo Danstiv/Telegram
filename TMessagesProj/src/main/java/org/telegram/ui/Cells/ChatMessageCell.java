@@ -26686,6 +26686,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         super.onInitializeAccessibilityNodeInfo(info);
     }
 
+    // View's built-in character/word/paragraph traversal for screen readers iterates over this text
+    @Override
+    public CharSequence getContentDescription() {
+        return accessibilityText;
+    }
+
     @Override
     public AccessibilityNodeProvider getAccessibilityNodeProvider() {
         return new MessageAccessibilityNodeProvider();
@@ -27087,7 +27093,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             getLocationOnScreen(pos);
             if (virtualViewId == HOST_VIEW_ID) {
                 AccessibilityNodeInfo info = AccessibilityNodeInfo.obtain(ChatMessageCell.this);
-                onInitializeAccessibilityNodeInfo(info);
                 final boolean unread = currentMessageObject != null && currentMessageObject.isOut() && !currentMessageObject.scheduled && currentMessageObject.isUnread();
                 final boolean contentUnread = currentMessageObject != null && currentMessageObject.isContentUnread();
                 final long fileSize = currentMessageObject != null ? currentMessageObject.loadedFileSize : 0;
@@ -27337,10 +27342,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     accessibilityTextContentUnread = contentUnread;
                     accessibilityTextFileSize = fileSize;
                 }
+                // after accessibilityText is built: View derives movement granularities from getContentDescription()
+                onInitializeAccessibilityNodeInfo(info);
 
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                     info.setContentDescription(accessibilityText.toString());
                 } else {
+                    // TalkBack speaks the description instead of the text, and the description loses ClickableSpans over IPC (no link earcons)
+                    info.setContentDescription(null);
                     info.setText(accessibilityText);
                 }
 
